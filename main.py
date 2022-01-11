@@ -1,14 +1,12 @@
-import random
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 
-
 #####################PRAMETRERS##########################
 num_of_options = 0
 
-patterns1 = [(1,), (4,), (3,), (1, 2), (1, 3), (2, 1), (1,), (5,), (2,)
-    , (5,), (2, 1), (2,)]
+patterns1 = [(1,), (4,), (3,), (1, 2), (1, 3), (2, 1), (1,), (5,), (2,),
+             (5,), (2, 1), (2,)]
 patterns2 = [(6,), (5,), (5,), (10,), (11,), (5, 4), (3, 1, 4), (2, 1, 4), (2, 1, 4), (2, 1, 4), (3, 2), (3, 2),
              (3, 2, 1), (4, 3, 1), (4, 2, 2), (5, 5), (6, 4), (8, 4), (18,), (14, 2), (13, 2), (11, 4), (16,), (7, 3),
              (8,), (1,), (2,), (2,), (4,), (11,), (13,), (15,), (9, 3), (8, 3), (7, 5, 2), (7, 3, 4), (6, 2, 3),
@@ -18,20 +16,35 @@ patterns3 = [(3, 3, 3), (2, 2, 5), (1, 2, 3, 2), (2, 2, 3, 1), (3, 7, 1), (9, 1)
              (4, 6), (4, 5), (9,), (8,), (5,), (7,), (4,), (6,), (3, 2), (3,), (2, 1), (2, 1), (3, 1, 2), (1, 3, 4, 1),
              (12, 2), (13, 5), (6, 6), (3, 6), (10, 1), (10, 2), (14,), (11,), (8,), (9,), (8,), (5,), (2,), (1, 2),
              (2, 2), (5,)]
-patterns = patterns1
+patterns = patterns3
 line_size = int(len(patterns) / 2)
-lines_lst = (list(itertools.product([0, 1], repeat=line_size)))
-lines = set(lines_lst)
-lines_sums = np.array([sum(l) for l in lines_lst])
-lines_sums_idx_sorted = np.argsort(lines_sums)
-lines_sums_sorted = np.sort(lines_sums)
-print("done")
-
-
 grid = [[-1 for j in range(line_size)] for i in range(line_size)]
 grid = np.array(grid)
 
+
 #########################################################
+
+
+def create_line(pattern, spaces):
+    line = []
+    idx = 0
+    for i in range(len(pattern)):
+        line += [0] * spaces[i]
+        if i > 0:
+            line.append(0)
+        line += [1] * pattern[i]
+        idx = i
+    line += [0] * spaces[idx + 1]
+    return tuple(line)
+
+
+def sums(length, total_sum):
+    if length == 1:
+        yield (total_sum,)
+    else:
+        for value in range(total_sum + 1):
+            for permutation in sums(length - 1, total_sum - value):
+                yield (value,) + permutation
 
 
 def check_if_pattern_in_line(pattern: tuple, line, current_line):
@@ -63,16 +76,16 @@ def get_all_possible_lines(pattern, current_line, group):
 
 
 sub_options = []
-for i in range(2 * line_size):
-    sub_sub = np.where(lines_sums == sum(patterns[i]))[0]
-    sub_sub = [lines_lst[j] for j in sub_sub]
-    sub_sub = set(sub_sub)
-    if i < line_size:
-        sub_options.append(get_all_possible_lines(patterns[i], grid[line_size - i - 1, :], sub_sub))
-    else:
-        sub_options.append(get_all_possible_lines(patterns[i],grid[:, i - line_size], sub_sub))
-    print(f"{i + 1}/{2 * line_size}", flush=True)
 
+
+for i in range(2 * line_size):
+    sub_options.append([])
+    pat = patterns[i]
+    spaces = list(sums(len(pat) + 1, line_size - (sum(pat) + len(pat) - 1)))
+    sub_sub = [create_line(pat, sp) for sp in spaces]
+    sub_sub = set(sub_sub)
+    sub_options[-1] = sub_sub
+    print(f"{i + 1}/{2 * line_size}", flush=True)
 
 
 def write_line(all_options, current_line):
@@ -101,19 +114,13 @@ if __name__ == '__main__':
             if i < line_size:
                 if - 1 not in grid[line_size - i - 1, :]:
                     continue
-                write_line(get_all_possible_lines(patterns[i], grid[line_size - i - 1, :], sub_options[i]), grid[line_size - i - 1, :])
+                write_line(get_all_possible_lines(patterns[i], grid[line_size - i - 1, :], sub_options[i]),
+                           grid[line_size - i - 1, :])
             else:
                 if - 1 not in grid[:, i - line_size]:
                     continue
-                write_line(get_all_possible_lines(patterns[i], grid[:, i - line_size], sub_options[i]), grid[:, i - line_size])
-    # plt.imshow(grid)
-    # plt.colorbar()
-    # plt.show(block=False)
-    # plt.pause(0.0001)
-    # plt.clf()
-    # plt.cla()
-    # plt.close()
+                write_line(get_all_possible_lines(patterns[i], grid[:, i - line_size], sub_options[i]),
+                           grid[:, i - line_size])
     plt.imshow(grid)
     plt.colorbar()
     plt.show()
-
