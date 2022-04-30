@@ -7,6 +7,15 @@ widthImg = 450
 flag = False
 
 
+class Line:
+    def __init__(self, p1, p2):
+        self.m = -(p2[1] - p1[1]) / (p2[0] - p1[0])
+        self.b = (-p1[1]) - self.m * p1[0]
+
+    def getY(self, x):
+        return -(self.m * x + self.b)
+
+
 def process(img):
     global flag
     # img = img[10:530, 10:530]
@@ -17,13 +26,14 @@ def process(img):
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     biggestCon = biggestContour(contours)
     biggestCon = reorder(biggestCon)
-    print(biggestCon)
-    print(reorder_left(biggestCon))
+    reorder_left(biggestCon)
     pts1 = np.float32(biggestCon)  # PREPARE POINTS FOR WARP
     pts2 = np.float32([[0, 0], [widthImg, 0], [0, heightImg], [widthImg, heightImg]])  # PREPARE POINTS FOR WARP
     matrix = cv2.getPerspectiveTransform(pts1, pts2)  # GER
     imgWarp = cv2.warpPerspective(img, matrix, (widthImg, heightImg))
-    return imgWarp
+    img = cv2.flip(imgWarp, 0)
+    img = cv2.flip(img, 1)
+    return img
 
 
 def preProcess(img):
@@ -34,11 +44,21 @@ def preProcess(img):
 
 
 def reorder_left(myPoints):
-    print(myPoints[1][0][0])
+    print(myPoints)
+    print('s')
+    l1 = Line(myPoints[0][0], myPoints[1][0])
+    l2 = Line(myPoints[2][0], myPoints[3][0])
+    myPoints[3][0][1] = l1.getY(0)
+    myPoints[1][0][1] = l2.getY(0)
     myPoints[1][0][0] = 0
     myPoints[3][0][0] = 0
     swap(myPoints, 1, 3)
     swap(myPoints, 0, 2)
+    print(myPoints)
+    print('s')
+    print(l1.m)
+    print(l2.m)
+    print('s')
     print(myPoints)
 
 
@@ -46,6 +66,7 @@ def swap(myPoints, i1, i2):
     tmp = myPoints[i1].copy()
     myPoints[i1] = myPoints[i2]
     myPoints[i2] = tmp
+
 
 def reorder(myPoints):
     myPoints = np.array(myPoints)[0]
