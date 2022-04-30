@@ -9,57 +9,65 @@ flag = False
 
 class Line:
     def __init__(self, p1, p2):
+        self.p1 = p1
+        self.p2 = p2
         self.m = -(p2[1] - p1[1]) / (p2[0] - p1[0])
         self.b = (-p1[1]) - self.m * p1[0]
 
     def getY(self, x):
         return -(self.m * x + self.b)
 
+    def distanc(self):
+        return np.sqrt((self.p1[0] - self.p2[0]) ** 2 + (self.p1[1] - self.p2[1]) ** 2)
+
 
 def process(img):
     global flag
-    # img = img[10:530, 10:530]
     if not flag:
         img = preProcess(img)
-        flag = True
-    # ret, thresh = cv2.threshold(img, 127, 255, 0)
+        # flag = True
+    ret, img = cv2.threshold(img, 127, 255, 0)
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     biggestCon = biggestContour(contours)
     biggestCon = reorder(biggestCon)
-    reorder_left(biggestCon)
+    if not flag:
+        reorder_left(biggestCon)
+        flag = True
     pts1 = np.float32(biggestCon)  # PREPARE POINTS FOR WARP
     pts2 = np.float32([[0, 0], [widthImg, 0], [0, heightImg], [widthImg, heightImg]])  # PREPARE POINTS FOR WARP
     matrix = cv2.getPerspectiveTransform(pts1, pts2)  # GER
     imgWarp = cv2.warpPerspective(img, matrix, (widthImg, heightImg))
     img = cv2.flip(imgWarp, 0)
     img = cv2.flip(img, 1)
+    # img = cv2.Canny(img, 100, 150)
+    # img = img[0:450, 200:450]
     return img
 
 
 def preProcess(img):
-    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # CONVERT IMAGE TO GRAY SCALE
-    imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1)  # ADD GAUSSIAN BLUR
-    imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, 1, 1, 11, 2)  # APPLY ADAPTIVE THRESHOLD
-    return imgThreshold
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # CONVERT IMAGE TO GRAY SCALE
+    img = cv2.GaussianBlur(img, (3, 3), 0)  # ADD GAUSSIAN BLUR
+    img = cv2.adaptiveThreshold(img, 255, 1, 1, 11, 2)  # APPLY ADAPTIVE THRESHOLD
+    return img
 
 
 def reorder_left(myPoints):
-    print(myPoints)
-    print('s')
     l1 = Line(myPoints[0][0], myPoints[1][0])
     l2 = Line(myPoints[2][0], myPoints[3][0])
-    myPoints[3][0][1] = l1.getY(0)
-    myPoints[1][0][1] = l2.getY(0)
+    myPoints[3][0][1] = l2.getY(0)
+    myPoints[1][0][1] = l1.getY(0)
     myPoints[1][0][0] = 0
     myPoints[3][0][0] = 0
     swap(myPoints, 1, 3)
     swap(myPoints, 0, 2)
-    print(myPoints)
-    print('s')
-    print(l1.m)
-    print(l2.m)
-    print('s')
-    print(myPoints)
+    upper_line = Line(myPoints[2][0], myPoints[3][0])
+    lower_line = Line(myPoints[0][0], myPoints[1][0])
+    if lower_line.distanc() < upper_line.distanc():
+        myPoints[3][0][0] = myPoints[2][0][0] - lower_line.distanc() * np.cos(np.tanh(upper_line.m))
+        myPoints[3][0][1] = upper_line.getY(myPoints[3][0][0])
+    else:
+        myPoints[1][0][0] = myPoints[0][0][0] - upper_line.distanc() * np.cos(np.tanh(lower_line.m))
+        myPoints[1][0][1] = upper_line.getY(myPoints[1][0][0])
 
 
 def swap(myPoints, i1, i2):
@@ -70,7 +78,7 @@ def swap(myPoints, i1, i2):
 
 def reorder(myPoints):
     myPoints = np.array(myPoints)[0]
-    myPoints = (myPoints).reshape((4, 2))
+    myPoints = myPoints.reshape((4, 2))
     myPointsNew = np.zeros((4, 1, 2), dtype=np.int32)
     add = myPoints.sum(1)
     myPointsNew[0] = myPoints[np.argmin(add)]

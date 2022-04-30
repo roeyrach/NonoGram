@@ -85,7 +85,6 @@ for i in range(2 * line_size):
     sub_sub = [create_line(pat, sp) for sp in spaces]
     sub_sub = set(sub_sub)
     sub_options[-1] = sub_sub
-    print(f"{i + 1}/{2 * line_size}", flush=True)
 
 
 def write_line(all_options, current_line):
