@@ -118,12 +118,36 @@ def get_left_pics_rows(img):
 
     return img
 
-if __name__ == '__main__':
-    image = cv2.imread("example_4.jpg")
-    image = get_left_picture(image)
+
+def capture_cam():
+    cam = cv2.VideoCapture(1)
+    processed = np.zeros((450, 450), dtype=np.float32)
+    processed = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
     while True:
-        cv2.imshow('cam', image)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        ret_val, video = cam.read()
+        video = cv2.resize(video, (450, 450))
+        try:
+            processed = get_left_picture(video)
+        except:
+            video1 = np.concatenate((video, processed), axis=1)
+            cv2.imshow('cam', video1)
+        else:
+            processed = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
+            video2 = np.concatenate((video, processed), axis=1)
+            cv2.imshow('cam', video2)
         if cv2.waitKey(1) & 0xFF == ord('p'):
-            cv2.imwrite("example_4.jpg", image)
+            break
+    cam.release()
+    cv2.destroyAllWindows()
+
+
+if __name__ == '__main__':
+    # image = cv2.imread("example_4.jpg")
+    # image = get_left_picture(image)
+    # while True:
+    #     cv2.imshow('cam', image)
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         break
+    #     if cv2.waitKey(1) & 0xFF == ord('p'):
+    #         cv2.imwrite("example_4.jpg", image)
+    capture_cam()
