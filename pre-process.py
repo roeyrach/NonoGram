@@ -120,7 +120,7 @@ def get_left_pics_rows(img):
 
 
 def capture_cam():
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture(0)
     processed = np.zeros((450, 450), dtype=np.float32)
     processed = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
     while True:
