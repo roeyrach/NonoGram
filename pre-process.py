@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import easyocr
 import pytesseract
 
 heightImg = 450
@@ -143,15 +144,18 @@ def get_pics_rows(img):
 
 def capture_cam():
     cam = cv2.VideoCapture(0)
-    left = np.zeros((450, 450), dtype=np.float32)
-    left = cv2.cvtColor(left, cv2.COLOR_GRAY2BGR)
+    black = np.zeros((450, 450), dtype=np.float32)
+    left = cv2.cvtColor(black, cv2.COLOR_GRAY2BGR)
+    up = cv2.cvtColor(black, cv2.COLOR_GRAY2BGR)
     while True:
         ret_val, video = cam.read()
         video = cv2.resize(video, (450, 450))
         try:
             left = get_side_picture(video, "left")
-            right = get_side_picture(video, "up")
+            up = get_side_picture(video, "up")
         except:
+            if len(left.shape) == 2:
+                left = cv2.cvtColor(left, cv2.COLOR_GRAY2BGR)
             video1 = np.concatenate((video, left), axis=1)
             cv2.imshow('cam', video1)
         else:
@@ -160,19 +164,45 @@ def capture_cam():
             cv2.imshow('cam', video2)
         if cv2.waitKey(1) & 0xFF == ord('p'):
             break
+        if cv2.waitKey(1) & 0xFF == ord('s'):
+            img_to_list_numbers(left, up)
+            # try:
+            #     img_to_list_numbers(left, up)
+            # except Exception as e:
+            #     print(e)
+            #     print("couldn't find the numbers")
     cam.release()
     cv2.destroyAllWindows()
 
 
+def recognize_text(img_path):
+    reader = easyocr.Reader(['en'])
+    return reader.readtext(img_path)
+
+
+def img_to_list_numbers(left, up):
+    left_numbers = recognize_text(left)
+    up_numbers = cv2.rotate(up, cv2.ROTATE_90_CLOCKWISE)
+    up_numbers = recognize_text(up_numbers)
+    for (bbox, text, prob) in left_numbers:
+        if prob >= 0.5:
+            print(f'left side: {text} (Probability: {prob:.2f})')
+    print()
+    print()
+    for (bbox, text, prob) in up_numbers:
+        if prob >= 0.5:
+            print(f'right side: {text} (Probability: {prob:.2f})')
+
+
 if __name__ == '__main__':
-    # capture_cam()
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    img = cv2.imread("example_3.jpeg")
+    capture_cam()
+    # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    # img = cv2.imread("example_3.jpeg")
     # img = pre_process_text_img(img)
-    img = scale_image(img, 40)
-    while True:
-        cv2.imshow('cam', img)
-        if cv2.waitKey(1) & 0xFF == ord('p'):
-            break
-    text = pytesseract.image_to_string(img)
-    print(text)
+    # img = scale_image(img, 40)
+    # while True:
+    #     cv2.imshow('cam', img)
+    #     if cv2.waitKey(1) & 0xFF == ord('p'):
+    #         break
+    # text = pytesseract.image_to_string(img)
+    # print(text)
